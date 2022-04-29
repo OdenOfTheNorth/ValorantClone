@@ -3,6 +3,7 @@
 
 #include "Valorant/Abilities/SpawnableObjects/StimBeacon.h"
 #include "Components/BoxComponent.h"
+#include "GameFramework/ProjectileMovementComponent.h"
 #include "Valorant/Player/PlayerCharacter.h"
 #include "Valorant/Weapon/PrimaryWeapon.h"
 
@@ -20,6 +21,8 @@ AStimBeacon::AStimBeacon()
 
 	BoxComponent->OnComponentBeginOverlap.AddDynamic(this, &AStimBeacon::HandleBeginOverlap);
 	BoxComponent->OnComponentEndOverlap.AddDynamic(this, &AStimBeacon::HandleEndOverlap);
+
+	ProjectileMovementComponent = CreateDefaultSubobject<UProjectileMovementComponent>(TEXT("ProjectileMovementComponent"));
 }
 
 void AStimBeacon::RestorFireRate()

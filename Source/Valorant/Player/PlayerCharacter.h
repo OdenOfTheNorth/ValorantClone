@@ -3,16 +3,20 @@
 #include "CoreMinimal.h"
 #include "GameFramework/Character.h"
 #include "Valorant/Weapon/BasicWeapon.h"
+#include "AbilitySystemInterface.h"
+#include "Valorant/Abilities/ValorantAttributeSet.h"
+#include "Valorant/Abilities/ValorantAbilitySystemComponent.h"
+#include "Valorant/Abilities/ValorantGameplayAbility.h"
 #include "PlayerCharacter.generated.h"
 
-
-class APrimaryWeapon;
-class ASecondaryWeapon;
-class AKnifeSlot;
+class UAbility;
+class UPrimaryWeapon;
+class USecondaryWeapon;
+class UKnifeSlot;
 class UAbilityComponent;
 class UCameraComponent;
 class USpringArmComponent;
-class ABasicWeapon;
+class UBasicWeapon;
 class UHealthComponent;
 
 UENUM()
@@ -24,7 +28,7 @@ enum ETeam
 };
 
 UCLASS()
-class VALORANT_API APlayerCharacter : public ACharacter
+class VALORANT_API APlayerCharacter : public ACharacter ,public IAbilitySystemInterface
 {
 	GENERATED_BODY()
 
@@ -42,33 +46,54 @@ public:
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
 	UHealthComponent* HealthComponent;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Abilitys", meta =(AllowPrivateAccess = "true"))
+	class UValorantAbilitySystemComponent* AbilitySystemComponent;
+	
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Abilitys", meta =(AllowPrivateAccess = "true"))
+	const UValorantAttributeSet* AttributeSetBase;
+
+	UPROPERTY(BlueprintReadOnly, EditDefaultsOnly, Category = "Abilitys")
+	TArray<TSubclassOf<UValorantGameplayAbility>> DefaultAbilities;
 	
 	//UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Components")
 	//TArray<TSubclassOf<ABasicWeapon>> WeaponClasses;	
-
+	
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Components")
 	FName WeaponAttachSocketName = "WeaponSocket";
 	
 	UPROPERTY(Replicated ,EditDefaultsOnly, BlueprintReadWrite, Category = "Components")
-	TArray<ABasicWeapon*> CurrentWeapon;
+	TArray<UBasicWeapon*> CurrentWeapon;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Weapons")
-	TSubclassOf<APrimaryWeapon> PrimaryWeaponClass;
+	TSubclassOf<UPrimaryWeapon> PrimaryWeaponClass;
 	UPROPERTY(Replicated ,EditDefaultsOnly, BlueprintReadWrite, Category = "Weapons")
-	APrimaryWeapon* PrimaryWeapon;
+	UPrimaryWeapon* PrimaryWeapon;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Weapons")
-	TSubclassOf<ASecondaryWeapon> SecondaryWeaponClass;
+	TSubclassOf<USecondaryWeapon> SecondaryWeaponClass;
 	UPROPERTY(Replicated ,EditDefaultsOnly, BlueprintReadWrite, Category = "Weapons")
-	ASecondaryWeapon* SecondaryWeapon;
+	USecondaryWeapon* SecondaryWeapon;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Weapons")
-	TSubclassOf<AKnifeSlot> KnifeClass;
+	TSubclassOf<UKnifeSlot> KnifeClass;
 	UPROPERTY(Replicated ,EditDefaultsOnly, BlueprintReadWrite, Category = "Weapons")
-	AKnifeSlot* Knife;
+	UKnifeSlot* Knife;
 
 	//UPROPERTY(Replicated ,VisibleAnywhere, BlueprintReadWrite, Category = "Weapons")
 	//ABasicWeapon* CurrentWeapon;
+
+	// Implement IAbilitySystemInterface
+	virtual class UAbilitySystemComponent* GetAbilitySystemComponent() const override;
+
+	virtual void InitializeAttributes();
+	virtual void GiveAbilities();
+
+	virtual void PossessedBy(AController* NewController) override;
+	virtual void OnRep_PlayerState() override;
+
+	UPROPERTY(BlueprintReadOnly, EditDefaultsOnly, Category = "GAS")
+	TSubclassOf<class UGameplayEffect> DefaultAttributeEffect;
 	
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Components")
 	int CurrentWeaponIndex = 0;
@@ -82,18 +107,37 @@ public:
 	bool CanMove = true;
 	UPROPERTY(Replicated, BlueprintReadOnly, Category = "Player")
 	bool CanLook = true;
-	
-	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Replicated, Category = "Components")
-	UAbilityComponent* Q_AbilityComp;
-	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Replicated, Category = "Components")
-	UAbilityComponent* E_AbilityComp;
-	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Replicated, Category = "Components")
-	UAbilityComponent* C_AbilityComp;
-	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Replicated, Category = "Abilitys")
-	UAbilityComponent* X_AbilityComp;
 
+	/*	
+	//UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Replicated, Category = "Abilitys")
+	//UAbilityComponent* Q_AbilityComp;
+	//UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Replicated, Category = "Abilitys")
+	//UAbilityComponent* E_AbilityComp;
+	//UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Replicated, Category = "Abilitys")
+	//UAbilityComponent* C_AbilityComp;
+	//UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Replicated, Category = "Abilitys")
+	//UAbilityComponent* X_AbilityComp;
+	
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Replicated, Category = "Abilitys")
-	UAbilityComponent* Current_AbilityComp;
+	TSubclassOf<UAbility> Q_AbilityClass;
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Replicated, Category = "Abilitys")
+	TSubclassOf<UAbility> E_AbilityClass;
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Replicated, Category = "Abilitys")
+	TSubclassOf<UAbility> C_AbilityClass;
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Replicated, Category = "Abilitys")
+	TSubclassOf<UAbility> X_AbilityClass;
+	
+	UPROPERTY( BlueprintReadWrite, Replicated, Category = "Abilitys")
+	UAbility* Q_Ability;
+	UPROPERTY( BlueprintReadWrite, Replicated, Category = "Abilitys")
+	UAbility* E_Ability;
+	UPROPERTY( BlueprintReadWrite, Replicated, Category = "Abilitys")
+	UAbility* C_Ability;
+	UPROPERTY( BlueprintReadWrite, Replicated, Category = "Abilitys")
+	UAbility* X_Ability;
+	
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Replicated, Category = "Abilitys")
+	UHands* Current_HandsComp;
 	
 	void Q_AbilityInput();
 	void E_AbilityInput();
@@ -108,9 +152,12 @@ public:
 	void C_AbilityBlueprint();
 	UFUNCTION(BlueprintImplementableEvent)
 	void X_AbilityBlueprint();
-
+	*/
 	
-	float RunSpeed, WalkSpeed, SlowWalkSpeed, CrouchSpeed;
+	float	RunSpeed,
+			WalkSpeed,
+			SlowWalkSpeed,
+			CrouchSpeed;
 
 	UPROPERTY(BlueprintReadOnly)
 	float DefaultFOV;
@@ -160,15 +207,17 @@ protected:
 		const class UDamageType* DamageType, class AController* InstigatedBy, AActor* DamageCauser);
 
 	void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
+	virtual bool ReplicateSubobjects(class UActorChannel* Channel, class FOutBunch* Bunch, FReplicationFlags* RepFlags) override;
 
-	ABasicWeapon* DroppedWeapon;
+	UBasicWeapon* DroppedWeapon;
+
+
 	
 public:	
-	virtual void Tick(float DeltaTime) override;
-	
-	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
-	
+	virtual void Tick(float DeltaTime) override;	
+	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;	
 	virtual FVector GetPawnViewLocation() const override;
 
-
+	UPROPERTY()
+	UHands* ObjectArray;
 };

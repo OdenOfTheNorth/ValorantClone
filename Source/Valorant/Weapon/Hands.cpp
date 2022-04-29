@@ -1,27 +1,69 @@
-// Fill out your copyright notice in the Description page of Project Settings.
-
-
 #include "Hands.h"
-
-// Sets default values
-AHands::AHands()
+/*
+void UHands::StartUsingServer_Implementation()
 {
- 	// Set this actor to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
-	PrimaryActorTick.bCanEverTick = true;
+}
+
+bool UHands::StartUsingServer_Validate()
+{
+}
+
+void UHands::StopUsingServer_Implementation()
+{
+}
+
+bool UHands::StopUsingServer_Validate()
+{
+}*/
+
+void UHands::StartUsingServer()
+{
+}
+
+void UHands::StopUsingServer()
+{
+}
+
+void UHands::StartUsing()
+{
+}
+
+void UHands::StopUsing()
+{
+}
+
+bool UHands::IsTickable() const
+{
+	return FTickableGameObject::IsTickable();
+}
+
+bool UHands::IsTickableInEditor() const
+{
+	return FTickableGameObject::IsTickableInEditor();
+}
+
+bool UHands::IsTickableWhenPaused() const
+{
+	return FTickableGameObject::IsTickableWhenPaused();
+}
+
+TStatId UHands::GetStatId() const
+{
+	return TStatId();
+}
+
+UWorld* UHands::GetWorld() const
+{
+	return UObject::GetWorld();
+}
+
+void UHands::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
+{
 
 }
 
-// Called when the game starts or when spawned
-void AHands::BeginPlay()
+void UHands::Tick(float DeltaTime)
 {
-	Super::BeginPlay();
-	
-}
-
-// Called every frame
-void AHands::Tick(float DeltaTime)
-{
-	Super::Tick(DeltaTime);
 
 }
 

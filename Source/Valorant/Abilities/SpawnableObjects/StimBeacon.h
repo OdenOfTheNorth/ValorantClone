@@ -11,14 +11,15 @@
 #include "Valorant/Weapon/SecondaryWeapon.h"
 #include "StimBeacon.generated.h"
 
+class UProjectileMovementComponent;
 USTRUCT()
 struct FWeaponBoost
 {
 	GENERATED_BODY()
 	APlayerCharacter* Player;
-	APrimaryWeapon* PrimaryWeapon;
-	ASecondaryWeapon* SecondaryWeapon;
-	AKnifeSlot* Knife;
+	UPrimaryWeapon* PrimaryWeapon;
+	USecondaryWeapon* SecondaryWeapon;
+	UKnifeSlot* Knife;
 	TArray<float> WeaponsDefaultFireRate;
 
 	float LeftTime = 0;
@@ -33,6 +34,9 @@ class VALORANT_API AStimBeacon : public AActor
 public:	
 	AStimBeacon();
 
+	UPROPERTY(EditDefaultsOnly)
+	UProjectileMovementComponent* ProjectileMovementComponent;
+	
 	UStaticMeshComponent* StaticMeshComponent;
 	UBoxComponent* BoxComponent;
 

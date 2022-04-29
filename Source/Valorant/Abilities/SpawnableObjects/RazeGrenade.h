@@ -6,6 +6,7 @@
 #include "GameFramework/Actor.h"
 #include "RazeGrenade.generated.h"
 
+class UProjectileMovementComponent;
 UCLASS()
 class VALORANT_API ARazeGrenade : public AActor
 {
@@ -14,6 +15,9 @@ class VALORANT_API ARazeGrenade : public AActor
 public:	
 	// Sets default values for this actor's properties
 	ARazeGrenade();
+
+	UPROPERTY(EditDefaultsOnly)
+	UProjectileMovementComponent* ProjectileMovementComponent;
 	
 	UPROPERTY(EditDefaultsOnly)
 	USceneComponent* SceneComponent;
@@ -50,6 +54,8 @@ protected:
 	
 	UPROPERTY(EditDefaultsOnly)
 	float Damage = 60;
+
+	AActor* MyOwner;
 	
 public:	
 	// Called every frame

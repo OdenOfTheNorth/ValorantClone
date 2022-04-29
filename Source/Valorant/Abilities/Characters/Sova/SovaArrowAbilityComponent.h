@@ -43,7 +43,10 @@ protected:
 	bool LastFrameAbilityInput = false;
 	bool CanShoot = false;
 	float ForceBuildUp = 300;
+	UFUNCTION(Server, Reliable, WithValidation, BlueprintCallable)
+	void ServerFireArrow();
 
+	void FireArrow();
 
 	int Arrows = 0;
 	int MaxArrows = 2;

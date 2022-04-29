@@ -15,7 +15,7 @@ AValorantHUD::AValorantHUD()
 }
 
 
-void AValorantHUD::DrawHUD()
+void AValorantHUD::DrawHUD()		
 {
 	Super::DrawHUD();
 

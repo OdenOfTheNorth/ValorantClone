@@ -6,6 +6,8 @@
 #include "GameFramework/Actor.h"
 #include "Arrow.generated.h"
 
+class UProjectileMovementComponent;
+
 UCLASS()
 class VALORANT_API AArrow : public AActor
 {
@@ -13,16 +15,18 @@ class VALORANT_API AArrow : public AActor
 	
 public:	
 	AArrow();
-
+	UPROPERTY(EditDefaultsOnly)
+	UProjectileMovementComponent* ProjectileMovementComponent;
+	
 	UPROPERTY(EditDefaultsOnly)
 	int MaxBounces = 2;
 	int CurrentBounce = 0;	
 
 	//UPROPERTY(Replicated)
-	FVector Velocity;
+	//FVector Velocity;
 	//UPROPERTY(Replicated)
-	FVector Acceleration;
-	float GravityStrength = 1000;
+	//FVector Acceleration;
+	//float GravityStrength = 1000;
 	
 protected:
 	virtual void BeginPlay() override;
@@ -49,6 +53,8 @@ protected:
 	UFUNCTION()
 	void HandleBeginOverlap(UPrimitiveComponent* OverlappedComp, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 BodyIndex, bool bFromSweep, const FHitResult& SweepHit);
 
+	//void HandleBegin
+	
 public:	
 	virtual void Tick(float DeltaTime) override;
 

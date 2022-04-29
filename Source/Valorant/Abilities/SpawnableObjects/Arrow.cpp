@@ -1,20 +1,15 @@
-// Fill out your copyright notice in the Description page of Project Settings.
-
-
 #include "Valorant/Abilities/SpawnableObjects/Arrow.h"
-
+#include "GameFramework/ProjectileMovementComponent.h"
 #include "Kismet/GameplayStatics.h"
 #include "Kismet/KismetMathLibrary.h"
-#include "Kismet/KismetSystemLibrary.h"
 
 
-// Sets default values
 AArrow::AArrow()
 {
- 	// Set this actor to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
 	PrimaryActorTick.bCanEverTick = true;
 	Mesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("Mesh"));
 	Mesh->SetSimulatePhysics(true);
+	ProjectileMovementComponent = CreateDefaultSubobject<UProjectileMovementComponent>(TEXT("ProjectileMovementComponent"));
 }
 
 void AArrow::ServerExploded_Implementation()
@@ -58,7 +53,15 @@ void AArrow::HandleBeginOverlap(UPrimitiveComponent* OverlappedComp, AActor* Oth
 {	
 	if (CurrentBounce < MaxBounces)
 	{
-		Velocity = FMath::GetReflectionVector(Velocity, SweepHit.Normal);
+		//ProjectileMovementComponent->bShouldBounce = true;
+
+		FVector d = ProjectileMovementComponent->Velocity;
+		FVector n = SweepHit.ImpactNormal;
+		FVector RD = d - 2 * (d * n) * n;
+		
+		ProjectileMovementComponent->Velocity = RD;
+		
+		CurrentBounce++;
 		return;
 	}	
 
@@ -70,40 +73,7 @@ void AArrow::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
 
-	FVector GravityAcceleration = FVector::UpVector * -GravityStrength;
-
-	Velocity += (Acceleration + GravityAcceleration) * DeltaTime;
-
-	FVector DeltaToMove = Velocity * DeltaTime;	
-
-	const int MaxIterations = 5;
-	int IterationsCount = 0;
-
-	//Collision
-	while (!DeltaToMove.IsNearlyZero() && ++IterationsCount < MaxIterations)
-	{
-
-		FHitResult Hit;
-		AddActorWorldOffset(DeltaToMove, true, &Hit);
-		DeltaToMove -= DeltaToMove * Hit.Time;
-
-		if (Hit.bBlockingHit)
-		{
-			if (Hit.bStartPenetrating)
-			{
-				FVector DepenVector = Hit.Normal * (Hit.PenetrationDepth + 0.01f);
-				AddActorWorldOffset(DepenVector);
-				continue;
-			}
-
-			FVector ImapctVelocity = FVector::DotProduct(Velocity, Hit.Normal) * Hit.Normal;
-			Velocity -= ImapctVelocity;
-			DeltaToMove -= FVector::DotProduct(DeltaToMove, Hit.Normal) * Hit.Normal;
-		}
-	}
-
-	FRotator Rotation = UKismetMathLibrary::MakeRotFromX(Velocity.GetSafeNormal());
+	FRotator Rotation = UKismetMathLibrary::MakeRotFromX(ProjectileMovementComponent->Velocity.GetSafeNormal());
 	SetActorRotation(Rotation);
-
 }
 

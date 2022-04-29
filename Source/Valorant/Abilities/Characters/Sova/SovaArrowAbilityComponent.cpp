@@ -1,4 +1,6 @@
 #include "Valorant/Abilities/Characters/Sova/SovaArrowAbilityComponent.h"
+
+#include "GameFramework/ProjectileMovementComponent.h"
 #include "Net/UnrealNetwork.h"
 #include "Valorant/Abilities/SpawnableObjects/Arrow.h"
 #include "Math/UnrealMathUtility.h"
@@ -18,6 +20,9 @@ void USovaArrowAbilityComponent::Start()
 {
 	Super::Start();
 
+	FireArrow();
+	return;
+	
 	if (true)
 	{
 		
@@ -50,6 +55,47 @@ void USovaArrowAbilityComponent::EndDeploy()
 	Super::EndDeploy();
 }
 
+void USovaArrowAbilityComponent::ServerFireArrow_Implementation()
+{
+	FireArrow();
+}
+
+bool USovaArrowAbilityComponent::ServerFireArrow_Validate()
+{
+	return true;
+}
+
+void USovaArrowAbilityComponent::FireArrow()
+{
+	if (!MyOwner->HasAuthority())
+	{
+		ServerFireArrow();
+	}
+	
+	FActorSpawnParameters SpawnParams;
+	SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+
+	FVector StartLocation;
+	FRotator Rotation;	
+			
+	MyOwner->GetActorEyesViewPoint(StartLocation, Rotation);
+
+	FVector spawnPos = StartLocation + Rotation.Vector() * 150;
+	
+	AArrow* ArrowActor = GetWorld()->SpawnActor<AArrow>(Arrow, spawnPos, Rotation, SpawnParams);
+
+	if (!ArrowActor)
+	{
+		return;
+	}
+
+	Force = 1500;
+	
+	FVector Impulse = Rotation.Vector() * Force;
+
+	ArrowActor->ProjectileMovementComponent->Velocity = Impulse;
+}
+
 void USovaArrowAbilityComponent::ServerStart_Implementation()
 {
 	
@@ -59,6 +105,8 @@ bool USovaArrowAbilityComponent::ServerStart_Validate()
 {
 	return true;
 }
+
+
 
 
 // Called every frame
@@ -76,24 +124,9 @@ void USovaArrowAbilityComponent::TickComponent(float DeltaTime, ELevelTick TickT
 
 	if (AbilitySelected && AbilityInput != LastFrameAbilityInput)
 	{
-		FActorSpawnParameters SpawnParams;
-		SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
 
-		FVector StartLocation;
-		FRotator Rotation;	
-			
-		MyOwner->GetActorEyesViewPoint(StartLocation, Rotation);
+		FireArrow();
 
-		AArrow* ArrowActor = GetWorld()->SpawnActor<AArrow>(Arrow, StartLocation, Rotation, SpawnParams);
-
-		if (!ArrowActor)
-		{
-			return;
-		}
-
-		FVector Impulse = Rotation.Vector() * Force;
-
-		ArrowActor->Acceleration = Impulse;
 		/*
 		UPrimitiveComponent* primitive = Cast<UPrimitiveComponent>(ArrowActor);
 		

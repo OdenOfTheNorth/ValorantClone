@@ -3,24 +3,33 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "GameFramework/Actor.h"
 #include "Hands.generated.h"
 
-UCLASS()
-class VALORANT_API AHands : public AActor
+UCLASS(DefaultToInstanced, BlueprintType, Blueprintable)
+class VALORANT_API UHands : public UObject, public FTickableGameObject
 {
 	GENERATED_BODY()
-	
-public:	
-	// Sets default values for this actor's properties
-	AHands();
+public:
+	//UFUNCTION(Server, Reliable, WithValidation)
+	virtual void StartUsingServer();
+	UFUNCTION(BlueprintCallable)
+	virtual void StartUsing();
 
-protected:
-	// Called when the game starts or when spawned
-	virtual void BeginPlay() override;
+	//UFUNCTION(Server, Reliable, WithValidation)
+	virtual void StopUsingServer();
+	UFUNCTION(BlueprintCallable)
+	virtual void StopUsing();
 
-public:	
-	// Called every frame
 	virtual void Tick(float DeltaTime) override;
+	bool IsTickable() const override;
+	bool IsTickableInEditor() const override;
+	bool IsTickableWhenPaused() const override;
+	TStatId GetStatId() const override;
+	UWorld* GetWorld() const override;
 
+	virtual void GetLifetimeReplicatedProps(TArray< FLifetimeProperty >& OutLifetimeProps) const override;
+	virtual bool IsSupportedForNetworking() const override { return true; }
+
+
+	AActor* MyOwner;
 };

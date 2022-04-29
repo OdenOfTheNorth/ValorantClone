@@ -39,26 +39,17 @@ void UTripWireComponent::PlaceTripWire(FVector TripPos, FVector Rot)
 	
 	AbilityInput = false;
 	AbilitySelected = false;
-	FRotator Rotation;
-	FRotator XRotation = UKismetMathLibrary::MakeRotFromX(Rot);
-	FRotator ZRotation = UKismetMathLibrary::MakeRotFromZ(Rot);
-	FRotator YRotation = UKismetMathLibrary::MakeRotFromY(Rot);
-
-	Rotation = XRotation + ZRotation + YRotation;
-
-	;
-	
-	//Rot::Rotation();
-	
-	//AActor::RotateVectorAroundAxis();
-	//Rotation = UKismetMathLibrary::RotateAngleAxis(FVector::ZeroVector, 0, Rot);	
-	//Rotation = XRotation + ZRotation;// * YRotation;
 	
 	FActorSpawnParameters SpawnParams;
 	SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
 	UE_LOG(LogTemp, Warning, TEXT("PlaceTripWire"));
 	
-	GetWorld()->SpawnActor<ATripWire>(TripWire, TripPos, Rot.Rotation(), SpawnParams);
+	ATripWire* Wire = GetWorld()->SpawnActor<ATripWire>(TripWire, TripPos, Rot.Rotation(), SpawnParams);
+
+	if (Wire)
+	{
+		Wire->MyOwner = MyOwner;		
+	}
 }
 
 void UTripWireComponent::RemoveTripWire(ATripWire* Wire)

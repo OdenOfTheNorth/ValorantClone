@@ -6,11 +6,18 @@
 #include "Components/CapsuleComponent.h"
 #include "Valorant/HealthComponent.h"
 #include "Valorant/Valorant.h"
-#include "Net/UnrealNetwork.h"
-#include "Valorant/Abilities/AbilityComponent.h"
+#include "Net/UnrealNetwork.h"		
+#include "Valorant/Abilities/Ability.h"
+//#include "Valorant/Abilities/AbilityComponent.h"
 #include "Valorant/Weapon/KnifeSlot.h"
 #include "Valorant/Weapon/PrimaryWeapon.h"
 #include "Valorant/Weapon/SecondaryWeapon.h"
+#include "Engine/ActorChannel.h"
+#include "Valorant/Valorant.h"
+#include "Valorant/Abilities/ValorantAbilitySystemComponent.h"
+#include "Valorant/Abilities/ValorantAttributeSet.h"
+#include "Valorant/Abilities/ValorantGameplayAbility.h"
+#include <GameplayEffectTypes.h>
 
 APlayerCharacter::APlayerCharacter()
 { 	
@@ -25,14 +32,152 @@ APlayerCharacter::APlayerCharacter()
 
 	CameraComp = CreateDefaultSubobject<UCameraComponent>(TEXT("CameraComp"));
 	CameraComp->SetupAttachment(SpringArmComp);	
+
+	AbilitySystemComponent = CreateDefaultSubobject<UValorantAbilitySystemComponent>(TEXT("AbilitySystemComponent"));
+	AbilitySystemComponent->SetIsReplicated(true);
+	AbilitySystemComponent->SetReplicationMode(EGameplayEffectReplicationMode::Minimal);
+
+	//AttributeSetBase = CreateDefaultSubobject<UValorantAttributeSet>(TEXT("AttributeSetBase"));
+	
+	//AttributeSetBase = AbilitySystemComponent->GetSet<UValorantAttributeSet>();
+}
+
+UAbilitySystemComponent* APlayerCharacter::GetAbilitySystemComponent() const
+{
+	return AbilitySystemComponent;
+}
+
+void APlayerCharacter::InitializeAttributes()
+{
+	if (AbilitySystemComponent && DefaultAttributeEffect)
+	{
+		FGameplayEffectContextHandle EffectContext = AbilitySystemComponent->MakeEffectContext();
+		EffectContext.AddSourceObject(this);
+
+		FGameplayEffectSpecHandle SpecHandle = AbilitySystemComponent->MakeOutgoingSpec(DefaultAttributeEffect, 1, EffectContext);
+
+		if (SpecHandle.IsValid())
+		{
+			FActiveGameplayEffectHandle AGEH = AbilitySystemComponent->ApplyGameplayEffectSpecToTarget(*SpecHandle.Data.Get(), AbilitySystemComponent);
+		}
+	}
+}
+
+void APlayerCharacter::GiveAbilities()
+{
+	if (HasAuthority() && AbilitySystemComponent)
+	{
+		for (TSubclassOf<UValorantGameplayAbility>& StartupAbility : DefaultAbilities)
+		{
+			if (StartupAbility == nullptr)
+			{
+				continue;
+			}
+			
+			AbilitySystemComponent->GiveAbility(
+				FGameplayAbilitySpec(StartupAbility,1, static_cast<int32>(StartupAbility.GetDefaultObject()->AbilityInputID), this));
+		}
+	}
+}
+
+void APlayerCharacter::PossessedBy(AController* NewController)
+{
+	Super::PossessedBy(NewController);
+
+	AbilitySystemComponent->InitAbilityActorInfo(this,this);
+	InitializeAttributes();
+	GiveAbilities();
+}
+
+void APlayerCharacter::OnRep_PlayerState()
+{
+	Super::OnRep_PlayerState();
+
+	AbilitySystemComponent->InitAbilityActorInfo(this,this);
+	InitializeAttributes();
+
+	if (AbilitySystemComponent && InputComponent)
+	{
+		const FGameplayAbilityInputBinds Binds("Confirm", "Cancel", "EAbilityInputID",
+			static_cast<int32>(EAbilityInputID::Confirm), static_cast<int32>(EAbilityInputID::Cancel));
+
+		AbilitySystemComponent->BindAbilityActivationToInputComponent(InputComponent, Binds);
+	}
 }
 
 void APlayerCharacter::BeginPlay()
 {
 	Super::BeginPlay();
 
-	DefaultFOV = CameraComp->FieldOfView;
+	FActorSpawnParameters SpawnParams;
+	SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+
+	/*
+	if (Q_AbilityClass)
+	{
+		Q_Ability = NewObject<UAbility>(this, Q_AbilityClass, FName("Q_Ability"));	
+	}
+	if (E_AbilityClass)
+	{
+		E_Ability = NewObject<UAbility>(this, E_AbilityClass, FName("E_Ability"));	
+	}
+	if (C_AbilityClass)
+	{
+		C_Ability = NewObject<UAbility>(this, C_AbilityClass, FName("C_Ability"));	
+	}
+	if (X_AbilityClass)
+	{
+		X_Ability = NewObject<UAbility>(this, X_AbilityClass, FName("X_Ability"));	
+	}
 	
+	
+	
+	Q_Ability = GetWorld()->SpawnActor<UAbility>(Q_AbilityClass,
+	 FVector::ZeroVector,FRotator::ZeroRotator, SpawnParams);
+	E_Ability = GetWorld()->SpawnActor<UAbility>(E_AbilityClass,
+	 FVector::ZeroVector,FRotator::ZeroRotator, SpawnParams);
+	C_Ability = GetWorld()->SpawnActor<UAbility>(C_AbilityClass,
+	 FVector::ZeroVector,FRotator::ZeroRotator, SpawnParams);
+	X_Ability = GetWorld()->SpawnActor<UAbility>(X_AbilityClass,
+	 FVector::ZeroVector,FRotator::ZeroRotator, SpawnParams);*/
+	/*
+	if (Q_Ability)
+	{
+		Q_Ability->MyOwner = Cast<AActor>(this);
+	}
+	else
+	{
+		UE_LOG(LogTemp,Warning,TEXT("Failed To spawn Q_Ability"));
+	}
+	
+	if (E_Ability)
+	{
+		E_Ability->MyOwner = Cast<AActor>(this);
+	}	
+	else
+	{
+		UE_LOG(LogTemp,Warning,TEXT("Failed To spawn E_Ability"));
+	}
+	
+	if (C_Ability)
+	{
+		C_Ability->MyOwner = Cast<AActor>(this);
+	}	
+	else
+	{
+		UE_LOG(LogTemp,Warning,TEXT("Failed To spawn C_Ability"));
+	}
+	
+	if (X_Ability)
+	{
+		X_Ability->MyOwner = Cast<AActor>(this);
+	}	
+	else
+	{
+		UE_LOG(LogTemp,Warning,TEXT("Failed To spawn X_Ability"));
+	}*/
+	
+	DefaultFOV = CameraComp->FieldOfView;	
 	HealthComponent->OnHealthChanged.AddDynamic(this, &APlayerCharacter::OnHealthChanged);
 
 	if (IsLocallyControlled())
@@ -43,26 +188,40 @@ void APlayerCharacter::BeginPlay()
 	
 	if (HasAuthority())
 	{
-		FActorSpawnParameters SpawnParams;
-		SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
-		//Set up Primary weapon
-		PrimaryWeapon = GetWorld()->SpawnActor<APrimaryWeapon>(PrimaryWeaponClass, FVector::ZeroVector,
-													 FRotator::ZeroRotator, SpawnParams);
-		PrimaryWeapon->SetOwner(this);
-		PrimaryWeapon->AttachToComponent(GetMesh(), FAttachmentTransformRules::SnapToTargetIncludingScale, WeaponAttachSocketName);
-		PrimaryWeapon->SkeletonMeshComp->ToggleVisibility(false);
-		//Set up Secondary Weapon
-		SecondaryWeapon = GetWorld()->SpawnActor<ASecondaryWeapon>(SecondaryWeaponClass, FVector::ZeroVector,
-											 FRotator::ZeroRotator, SpawnParams);
-		SecondaryWeapon->SetOwner(this);
-		SecondaryWeapon->AttachToComponent(GetMesh(), FAttachmentTransformRules::SnapToTargetIncludingScale, WeaponAttachSocketName);
-		SecondaryWeapon->SkeletonMeshComp->ToggleVisibility(false);
-		//Set up Knife weapon
-		Knife = GetWorld()->SpawnActor<AKnifeSlot>(KnifeClass, FVector::ZeroVector,
-											 FRotator::ZeroRotator, SpawnParams);
-		Knife->SetOwner(this);
-		Knife->AttachToComponent(GetMesh(), FAttachmentTransformRules::SnapToTargetIncludingScale, WeaponAttachSocketName);
-		Knife->SkeletonMeshComp->ToggleVisibility(false);
+		if (PrimaryWeaponClass)
+		{
+			//Set up Primary weapon
+			PrimaryWeapon = NewObject<UPrimaryWeapon>(this, PrimaryWeaponClass, FName("PrimaryWeapon"));
+			
+			//PrimaryWeapon = GetWorld()->SpawnActor<UPrimaryWeapon>(PrimaryWeaponClass, FVector::ZeroVector,
+			//											 FRotator::ZeroRotator, SpawnParams);
+			//PrimaryWeapon->MyOwner = this;
+			//PrimaryWeapon->SkeletonMeshComp->AttachToComponent(GetMesh(), FAttachmentTransformRules::SnapToTargetIncludingScale, WeaponAttachSocketName);
+			//PrimaryWeapon->SkeletonMeshComp->ToggleVisibility(false);
+		}
+
+		if (SecondaryWeaponClass)
+		{
+			//Set up Secondary Weapon
+			SecondaryWeapon = NewObject<USecondaryWeapon>(this, SecondaryWeaponClass, FName("SecondaryWeapon"));
+			//SecondaryWeapon = GetWorld()->SpawnActor<USecondaryWeapon>(SecondaryWeaponClass, FVector::ZeroVector,
+			//									 FRotator::ZeroRotator, SpawnParams);
+			//SecondaryWeapon->MyOwner = this;
+			//SecondaryWeapon->SkeletonMeshComp->AttachToComponent(GetMesh(), FAttachmentTransformRules::SnapToTargetIncludingScale, WeaponAttachSocketName);
+			//SecondaryWeapon->SkeletonMeshComp->ToggleVisibility(false);
+		}
+
+		if (KnifeClass)
+		{
+			//Set up Knife weapon
+			Knife = NewObject<UKnifeSlot>(this, KnifeClass, FName("Knife"));			
+			//Knife = GetWorld()->SpawnActor<UKnifeSlot>(KnifeClass, FVector::ZeroVector,
+			//									 FRotator::ZeroRotator, SpawnParams);
+			//Knife->MyOwner = this;
+			//Knife->SkeletonMeshComp->AttachToComponent(GetMesh(), FAttachmentTransformRules::SnapToTargetIncludingScale, WeaponAttachSocketName);
+			//Knife->SkeletonMeshComp->ToggleVisibility(false);
+		}
+		
 		//Add weapons to a list
 		CurrentWeapon.Add(PrimaryWeapon);
 		CurrentWeapon.Add(SecondaryWeapon);
@@ -70,8 +229,11 @@ void APlayerCharacter::BeginPlay()
 		//Set visibility on the selected weapon
 		if (CurrentWeapon[CurrentWeaponIndex])
 		{
-			CurrentWeapon[CurrentWeaponIndex]->SkeletonMeshComp->ToggleVisibility(true);	
-		}	
+			//CurrentWeapon[CurrentWeaponIndex]->SkeletonMeshComp->ToggleVisibility(true);	
+		}
+
+		//Current_HandsComp = CurrentWeapon[CurrentWeaponIndex];
+		
 		/* Old Junk Code
 		for (int i = 0; i < WeaponClasses.Num(); i++)
 		{
@@ -93,7 +255,9 @@ void APlayerCharacter::BeginPlay()
 		{
 			CurrentWeapon[CurrentWeaponIndex]->SkeletonMeshComp->ToggleVisibility(true);	
 		}	*/	
-	}	
+	}
+
+
 }
 
 void APlayerCharacter::BeginCrouch()
@@ -159,25 +323,36 @@ void APlayerCharacter::JumpInput()
 }
 
 void APlayerCharacter::StartShooting()
-{
-	if (Current_AbilityComp && Current_AbilityComp->AbilitySelected)
+{/*
+	if (Current_HandsComp)
 	{
-		Current_AbilityComp->AbilityInput = true;
+		Current_HandsComp->StartUsing();
 	}
 	
 	
+	if (Current_HandsComp && Current_HandsComp->AbilitySelected)
+	{
+		Current_HandsComp->AbilityInput = true;
+	}
+		
 	if (CurrentWeapon[CurrentWeaponIndex])
 	{
-		CurrentWeapon[CurrentWeaponIndex]->StartFire();
+		CurrentWeapon[CurrentWeaponIndex]->StartUsing();
 	}
 	else
 	{
 		UE_LOG(LogTemp, Warning, TEXT("CurrentWeapon is null"));
-	}
+	}*/
 }
 
 void APlayerCharacter::EndShooting()
-{
+{/*
+	if (Current_HandsComp)
+	{
+		Current_HandsComp->StopUsing();	
+	}
+	
+	/*
 	if (Current_AbilityComp && Current_AbilityComp->AbilitySelected)
 	{
 		Current_AbilityComp->AbilityInput = false;
@@ -185,20 +360,24 @@ void APlayerCharacter::EndShooting()
 	
 	if (CurrentWeapon[CurrentWeaponIndex])
 	{
-		CurrentWeapon[CurrentWeaponIndex]->EndFire();
+		CurrentWeapon[CurrentWeaponIndex]->StopUsing();
 	}
 	else
 	{
 		UE_LOG(LogTemp, Warning, TEXT("CurrentWeapon is null"));
-	}	
+	}*/
 }
 
 void APlayerCharacter::ReloadWeapon()
-{
-	if (CurrentWeapon[CurrentWeaponIndex])
-	{
-		CurrentWeapon[CurrentWeaponIndex]->StartReload();
-	}
+{/*
+	UBasicWeapon* Weapon = Cast<UBasicWeapon>(Current_HandsComp);
+
+	//Current_HandsComp->
+	
+	if (Weapon)
+	{		
+		Weapon->StartReload();
+	}*/
 }
 
 void APlayerCharacter::ChangeWeaponUp()
@@ -208,9 +387,8 @@ void APlayerCharacter::ChangeWeaponUp()
 		ServerChangeWeaponUp();
 	}
 
-	CurrentWeapon[CurrentWeaponIndex]->SkeletonMeshComp->ToggleVisibility(false);	
-	CurrentWeaponIndex = (CurrentWeaponIndex + 1) % CurrentWeapon.Num();	
-	CurrentWeapon[CurrentWeaponIndex]->SkeletonMeshComp->ToggleVisibility(true);
+	CurrentWeaponIndex = (CurrentWeaponIndex + 1) % CurrentWeapon.Num();
+	//Current_HandsComp = Cast<UHands>(CurrentWeapon[CurrentWeaponIndex]);
 }
 
 void APlayerCharacter::ChangeWeaponDown()
@@ -220,15 +398,14 @@ void APlayerCharacter::ChangeWeaponDown()
 		ServerChangeWeaponDown();
 	}
 
-	CurrentWeapon[CurrentWeaponIndex]->SkeletonMeshComp->ToggleVisibility(false);	
 	CurrentWeaponIndex = (CurrentWeaponIndex - 1) % CurrentWeapon.Num();
 
 	if (CurrentWeaponIndex == -1)
 	{
 		CurrentWeaponIndex = CurrentWeapon.Num() - 1;
 	}
-	
-	CurrentWeapon[CurrentWeaponIndex]->SkeletonMeshComp->ToggleVisibility(true);
+
+	//Current_HandsComp = Cast<UHands>(CurrentWeapon[CurrentWeaponIndex]);
 }
 
 void APlayerCharacter::DropWeapon()
@@ -244,8 +421,8 @@ void APlayerCharacter::DropWeapon()
 	//ABasicWeapon* WeaponsPtr = GetWorld()->SpawnActor<ABasicWeapon>(CurrentWeapon[CurrentWeaponIndex], FVector::ZeroVector,
 	//												 FRotator::ZeroRotator, SpawnParams);
 
-	ABasicWeapon* WeaponsPtr = CurrentWeapon[CurrentWeaponIndex];
-	WeaponsPtr->SetOwner(nullptr);
+	UBasicWeapon* WeaponsPtr = CurrentWeapon[CurrentWeaponIndex];
+	WeaponsPtr->MyOwner = nullptr;
 	UPrimitiveComponent* primitive = Cast<UPrimitiveComponent>(WeaponsPtr);
 
 	if (primitive)
@@ -285,21 +462,42 @@ bool APlayerCharacter::ServerChangeWeaponDown_Validate()
 {
 	return true;
 }
-
+/*
 void APlayerCharacter::Q_AbilityInput()
 {
-	if (!Q_AbilityComp)
+	/*if (!Q_Ability)
 	{
-		UE_LOG(LogTemp,Warning, TEXT("no Q_AbilityComp"));
-		return;
+		UE_LOG(LogTemp,Warning, TEXT("no Q_Ability"));
 	}
+	else
+	{
+		Current_HandsComp = Q_Ability;
+		Current_HandsComp->StartUsing();
+		return;
+	}	
+	
+	/*if (!Q_AbilityComp)
+	{
+		UE_LOG(LogTemp,Warning, TEXT("no Q_AbilityComp"));		
+	}
+	el
 
-	Q_AbilityBlueprint();
+	Q_AbilityBlueprint();	
 }
 
 void APlayerCharacter::E_AbilityInput()
-{
-	if (!E_AbilityComp)
+{/*
+	if (!E_Ability)
+	{
+		UE_LOG(LogTemp,Warning, TEXT("no E_Ability"));
+	}
+	else
+	{
+		E_Ability->StartUsing();
+		return;
+	}	
+	
+	/*if (!E_AbilityComp)
 	{
 		UE_LOG(LogTemp,Warning, TEXT("no E_AbilityComp"));
 		return;
@@ -311,8 +509,18 @@ void APlayerCharacter::E_AbilityInput()
 }
 
 void APlayerCharacter::C_AbilityInput()
-{
-	if (!C_AbilityComp)
+{/*
+	if (!C_Ability)
+	{
+		UE_LOG(LogTemp,Warning, TEXT("no E_Ability"));
+	}
+	else
+	{
+		C_Ability->StartUsing();
+		return;
+	}	
+	
+	/*if (!C_AbilityComp)
 	{
 		UE_LOG(LogTemp,Warning, TEXT("no C_AbilityComp APlayerCharacter"));
 		return;
@@ -322,15 +530,25 @@ void APlayerCharacter::C_AbilityInput()
 }
 
 void APlayerCharacter::X_AbilityInput()
-{
-	if (!X_AbilityComp)
+{/*
+	if (!X_Ability)
+	{
+		UE_LOG(LogTemp,Warning, TEXT("no E_Ability"));
+	}
+	else
+	{
+		X_Ability->StartUsing();
+		return;
+	}	
+	
+	/*if (!X_AbilityComp)
 	{
 		UE_LOG(LogTemp,Warning, TEXT("no X_AbilityInput"));
 		return;
 	}
 
 	X_AbilityBlueprint();
-}
+}*/
 
 void APlayerCharacter::ServerDropWeapon_Implementation()
 {
@@ -410,7 +628,7 @@ void APlayerCharacter::Tick(float DeltaTime)
 
 	if (hit.bBlockingHit)
 	{
-		ABasicWeapon* Weapon = Cast<ABasicWeapon>(hit.GetActor());
+		UBasicWeapon* Weapon = Cast<UBasicWeapon>(hit.GetActor());
 
 		if (Weapon)
 		{
@@ -444,10 +662,18 @@ void APlayerCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputCom
 	PlayerInputComponent->BindAction("Crouch", IE_Pressed, this, &APlayerCharacter::BeginCrouch);
 	PlayerInputComponent->BindAction("Crouch", IE_Released, this, &APlayerCharacter::EndCrouch);
 	//Abilitys
-	PlayerInputComponent->BindAction("QAbility", IE_Pressed, this, &APlayerCharacter::Q_AbilityInput);
-	PlayerInputComponent->BindAction("EAbility", IE_Pressed, this, &APlayerCharacter::E_AbilityInput);
-	PlayerInputComponent->BindAction("CAbility", IE_Pressed, this, &APlayerCharacter::C_AbilityInput);
-	PlayerInputComponent->BindAction("XAbility", IE_Pressed, this, &APlayerCharacter::X_AbilityInput);	
+	//PlayerInputComponent->BindAction("QAbility", IE_Pressed, this, &APlayerCharacter::Q_AbilityInput);
+	//PlayerInputComponent->BindAction("EAbility", IE_Pressed, this, &APlayerCharacter::E_AbilityInput);
+	//PlayerInputComponent->BindAction("CAbility", IE_Pressed, this, &APlayerCharacter::C_AbilityInput);
+	//PlayerInputComponent->BindAction("XAbility", IE_Pressed, this, &APlayerCharacter::X_AbilityInput);
+
+	if (AbilitySystemComponent && InputComponent)
+	{
+		const FGameplayAbilityInputBinds Binds("Confirm", "Cancel", "EAbilityInputID",
+			static_cast<int32>(EAbilityInputID::Confirm), static_cast<int32>(EAbilityInputID::Cancel));
+
+		AbilitySystemComponent->BindAbilityActivationToInputComponent(InputComponent, Binds);
+	}
 }
 
 FVector APlayerCharacter::GetPawnViewLocation() const
@@ -466,5 +692,14 @@ void APlayerCharacter::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& Out
 
 	DOREPLIFETIME(APlayerCharacter, CurrentWeapon);
 	DOREPLIFETIME(APlayerCharacter, Died);
+}
+
+bool APlayerCharacter::ReplicateSubobjects(UActorChannel* Channel, FOutBunch* Bunch, FReplicationFlags* RepFlags)
+{
+	bool bWroteSomething = Super::ReplicateSubobjects(Channel, Bunch, RepFlags);
+
+	//bWroteSomething |= Channel->ReplicateSubobject(Current_HandsComp, *Bunch, *RepFlags);
+
+	return bWroteSomething;
 }
 

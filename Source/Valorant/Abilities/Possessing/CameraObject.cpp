@@ -41,9 +41,9 @@ void ACameraObject::UnPossess()
 {
 	AController* TempController = GetInstigatorController();
 	
-	if (OwnerPawn)
+	if (MyOwner)
 	{
-		TempController->Possess(OwnerPawn);
+		TempController->Possess(MyOwner);
 		UE_LOG(LogTemp,Warning, TEXT("Posses"))
 	}
 	else

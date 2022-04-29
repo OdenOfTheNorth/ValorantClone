@@ -2,6 +2,8 @@
 
 
 #include "Valorant/Abilities/Characters/Raze/ThrowGrenadeAbilityComponent.h"
+
+#include "GameFramework/ProjectileMovementComponent.h"
 #include "Valorant/Abilities/SpawnableObjects/RazeGrenade.h"
 
 void UThrowGrenadeAbilityComponent::Start()
@@ -58,15 +60,15 @@ void UThrowGrenadeAbilityComponent::ThrowGrenade()
 	FRotator Rotation;
 	
 	MyOwner->GetActorEyesViewPoint(StartLocation, Rotation);
-	
-	FVector SpawnPos = StartLocation + (Rotation.Vector() * 10);
+
+	FVector Dir = Rotation.Vector();
+	FVector SpawnPos = StartLocation + (Dir * 100);
 	
 	ARazeGrenade* GrenadePTR = GetWorld()->SpawnActor<ARazeGrenade>(Grenade, SpawnPos,FRotator::ZeroRotator, SpawnParams);
 
-	UPrimitiveComponent* Primitive = Cast<UPrimitiveComponent>(GrenadePTR);
-
-	if (Primitive)
+	if (GrenadePTR)
 	{
-		Primitive->AddImpulse(Rotation.Vector() * 10000);
+		GrenadePTR->ProjectileMovementComponent->Velocity = Dir * 10000;
 	}
+
 }

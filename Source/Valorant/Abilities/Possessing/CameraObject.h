@@ -32,7 +32,7 @@ public:
 	UPROPERTY(EditDefaultsOnly)
 	UStaticMeshComponent* StaticMesh = nullptr;
 
-	APawn* OwnerPawn;
+	APawn* MyOwner;
 
 	UPROPERTY(EditDefaultsOnly)
 	bool CanMove = true;

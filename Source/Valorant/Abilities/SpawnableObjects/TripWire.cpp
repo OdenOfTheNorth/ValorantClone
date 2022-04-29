@@ -61,7 +61,8 @@ void ATripWire::OnTrippwireActivated()
 	APlayerCharacter* Pawn = Cast<APlayerCharacter>(TrapedActor);
 	if (Pawn)
 	{
-		Pawn->CanMove = false;
+		ActorTrappedLocation = Pawn->GetActorLocation();
+		//Pawn->CanMove = false;
 		//Pawn->GetInstigatorController()->SetIgnoreMoveInput(false);		
 		//Pawn->GetMovementComponent()->Deactivate();
 		GetWorld()->GetTimerManager().SetTimer(TimeHandler_TripWire, this,&ATripWire::OnTrippwireDeactivated, TrappedTime, false);
@@ -81,15 +82,47 @@ void ATripWire::OnTrippwireDeactivated()
 	if (Pawn)
 	{
 		Pawn->CanMove = true;
-		//Pawn->GetMovementComponent()->Activate();
-		UGameplayStatics::ApplyDamage(Pawn, Damage, MyOwner->GetInstigatorController(), this, TripWireDamageType);	
+
+		if (MyOwner)
+		{
+			UGameplayStatics::ApplyDamage(Pawn, Damage, MyOwner->GetInstigatorController(), MyOwner, TripWireDamageType);		
+		}		
 	}
 
 	Destroy();
 }
 
+void ATripWire::ServerActorTrappedInTripwire_Implementation()
+{
+	ActorTrappedInTripwire();
+}
+
+bool ATripWire::ServerActorTrappedInTripwire_Validate()
+{
+	return true;
+}
+
+void ATripWire::ActorTrappedInTripwire()
+{
+	if (!MyOwner->HasAuthority())
+	{
+		ServerActorTrappedInTripwire();
+	}
+	
+	FVector dir = TrapedActor->GetActorLocation() - ActorTrappedLocation;
+	float dist = FVector::Distance(ActorTrappedLocation, TrapedActor->GetActorLocation());
+	APlayerCharacter* character = Cast<APlayerCharacter>(TrapedActor);
+
+	if (character)
+	{
+		FHitResult Hit;
+		FVector DeltaToMove = dir * dist;
+		character->AddActorWorldOffset(DeltaToMove, true, &Hit);
+	}
+}
+
 void ATripWire::OnHealthChanged(UHealthComponent* HealthComp, float Health, float HealthDelta,
-	const UDamageType* DamageType, AController* InstigatedBy, AActor* DamageCauser)
+                                const UDamageType* DamageType, AController* InstigatedBy, AActor* DamageCauser)
 {
 	if (Health <= 0)
 	{
@@ -155,6 +188,8 @@ void ATripWire::Tick(float DeltaTime)
 
 	if (!Activated)
 	{
+
+		
 		return;
 	}
 

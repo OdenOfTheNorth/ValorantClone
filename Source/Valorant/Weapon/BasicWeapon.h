@@ -24,12 +24,12 @@ public:
 };
 
 UCLASS()
-class VALORANT_API ABasicWeapon : public AHands
+class VALORANT_API UBasicWeapon : public UHands
 {
 	GENERATED_BODY()
 	
 public:	
-	ABasicWeapon();
+	UBasicWeapon();
 
 	void Fire();
 
@@ -49,11 +49,10 @@ public:
 	UFUNCTION(BlueprintCallable)
 	void EndSecondary();
 
-	UFUNCTION(BlueprintCallable, Category = "Weapon")
-	void StartFire();
+	//UFUNCTION(BlueprintCallable, Category = "Weapon")
+	void StartUsing() override;
 	
-	UFUNCTION(BlueprintCallable, Category = "Weapon")
-	void EndFire();
+	void StopUsing() override;
 
 	void PlayFireEffects(FVector TraceEnd);
 	void PlaySurfaceEffect(FVector ImpactPoint, EPhysicalSurface SurfaceType);
@@ -67,10 +66,10 @@ public:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Weapon")
 	float HeadShotMultiplier = 2;
 
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Weapon Components")
-	USkeletalMeshComponent* SkeletonMeshComp;
-
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Weapon Components")
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Weapon Components")
+	USkeletalMesh* SkeletonMeshComp;
+	
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Weapon Components")
 	UStaticMeshComponent* StaticMeshComp;
 	
 	UPROPERTY(EditDefaultsOnly)
@@ -105,7 +104,7 @@ public:
 	
 protected:
 	// Called when the game starts or when spawned
-	virtual void BeginPlay() override;
+	virtual void BeginPlay();
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Weapon Effects")
 	TSubclassOf<UDamageType> DamageType;

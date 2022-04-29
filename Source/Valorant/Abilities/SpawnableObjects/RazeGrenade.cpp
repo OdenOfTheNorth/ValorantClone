@@ -4,6 +4,7 @@
 #include "RazeGrenade.h"
 
 #include "DrawDebugHelpers.h"
+#include "GameFramework/ProjectileMovementComponent.h"
 #include "Kismet/GameplayStatics.h"
 #include "Kismet/KismetSystemLibrary.h"
 
@@ -20,7 +21,7 @@ ARazeGrenade::ARazeGrenade()
 	RootComponent = StaticMeshComponent;
 	//StaticMeshComponent->SetupAttachment(RootComponent);
 
-	StaticMeshComponent->SetSimulatePhysics(true);
+	ProjectileMovementComponent = CreateDefaultSubobject<UProjectileMovementComponent>(TEXT("ProjectileMovementComponent"));
 
 	SetReplicates(true);
 	//SetReplicatedMovement(true);
@@ -38,7 +39,7 @@ void ARazeGrenade::Explode()
 	//	ExploadeOverlapObjectTypes, AActor::StaticClass(), TArray<AActor*>(),OverlappedActors);
 
 	UGameplayStatics::ApplyRadialDamage(this, Damage, GetActorLocation(),
-		BlastRadius, nullptr, OverlappedActors, this, GetInstigatorController(), true);
+		BlastRadius, nullptr, OverlappedActors, MyOwner, GetInstigatorController(), false);
 	
 	DrawDebugSphere(GetWorld(), GetActorLocation(), BlastRadius, 16, FColor::Red, false, 3);
 	
@@ -67,12 +68,7 @@ void ARazeGrenade::Explode()
 			continue;
 		}
 
-		UPrimitiveComponent* Primitive = Cast<UPrimitiveComponent>(GrenadePTR);
-
-		if (Primitive && Primitive->IsSimulatingPhysics())
-		{			
-			Primitive->AddImpulse(Direction.GetSafeNormal() * 150);
-		}		
+		GrenadePTR->ProjectileMovementComponent->Velocity = Direction.GetSafeNormal() * 150;		
 	}
 
 	Destroy();
@@ -93,7 +89,7 @@ bool ARazeGrenade::ServerExplode_Validate()
 void ARazeGrenade::BeginPlay()
 {
 	Super::BeginPlay();
-
+	ProjectileMovementComponent->bShouldBounce = true;
 	GetWorldTimerManager().SetTimer(TimerHandle_TimeToExpolode, this, &ARazeGrenade::Explode, TimeToExplode, false);
 }
 

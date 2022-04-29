@@ -10,7 +10,7 @@
  * 
  */
 UCLASS()
-class VALORANT_API APrimaryWeapon : public ABasicWeapon
+class VALORANT_API UPrimaryWeapon : public UBasicWeapon
 {
 	GENERATED_BODY()
 	

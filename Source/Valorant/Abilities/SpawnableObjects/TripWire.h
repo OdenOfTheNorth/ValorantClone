@@ -31,6 +31,8 @@ public:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Weapon Effects")
 	TSubclassOf<UDamageType> TripWireDamageType;
 
+	FVector ActorTrappedLocation;
+	
 	FVector StartLocation;
 	FVector ShotDirection;	
 	FVector TraceEnd; 
@@ -51,6 +53,10 @@ public:
 	void OnTrippwireActivated();
 	void OnTrippwireDeactivated();
 
+	UFUNCTION(Server, Reliable, WithValidation)
+	void ServerActorTrappedInTripwire();
+	void ActorTrappedInTripwire();
+	
 	UFUNCTION()
 	void OnHealthChanged(UHealthComponent* HealthComp, float Health,	float HealthDelta, const class UDamageType* DamageType, class AController* InstigatedBy, AActor* DamageCauser);
 

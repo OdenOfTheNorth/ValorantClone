@@ -14,57 +14,52 @@
 #include "Valorant/Player/PlayerCharacter.h"
 
 // Sets default values
-ABasicWeapon::ABasicWeapon()
+UBasicWeapon::UBasicWeapon()
 {
  	// Set this actor to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
-	PrimaryActorTick.bCanEverTick = true;
+	//PrimaryActorTick.bCanEverTick = true;
 
-	SkeletonMeshComp = CreateDefaultSubobject<USkeletalMeshComponent>(TEXT("MeshComp"));
-	RootComponent = SkeletonMeshComp;
+	//SkeletonMeshComp = CreateDefaultSubobject<USkeletalMeshComponent>(TEXT("MeshComp"));
+	//RootComponent = SkeletonMeshComp;
 
-	StaticMeshComp = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("StaticMeshComp"));
+	//StaticMeshComp = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("StaticMeshComp"));
 	
-	MuzzleLocation = CreateDefaultSubobject<USceneComponent>(TEXT("MuzzleLocation"));
-	MuzzleLocation->SetupAttachment(StaticMeshComp);
+	//MuzzleLocation = CreateDefaultSubobject<USceneComponent>(TEXT("MuzzleLocation"));
+	//MuzzleLocation->SetupAttachment(StaticMeshComp);
 	
-	MuzzleSocketName = "MuzzleSocket";
-	TracerTargetName = "Target";
+	//MuzzleSocketName = "MuzzleSocket";
+	//TracerTargetName = "Target";
 
-	SetReplicates(true);
-
-	NetUpdateFrequency = 66.f;
-	MinNetUpdateFrequency = 33.f;
+	//SetReplicates(true);
+	//NetUpdateFrequency = 66.f;
+	//MinNetUpdateFrequency = 33.f;
 }
 
-void ABasicWeapon::BeginPlay()
+void UBasicWeapon::BeginPlay()
 {
-	Super::BeginPlay();
-
 	TimeBetweenShots = 60 / RateOfFire; 
 	CurrentAmmo = MaxAmmo;
 
-	Player = Cast<APlayerCharacter>(GetOwner());
+	Player = Cast<APlayerCharacter>(MyOwner);
 }
 
-void ABasicWeapon::ServerFire_Implementation()
+void UBasicWeapon::ServerFire_Implementation()
 {
 	Fire();
 }
 
-bool ABasicWeapon::ServerFire_Validate()
+bool UBasicWeapon::ServerFire_Validate()
 {
 	return true;
 }
 
-void ABasicWeapon::Fire()
+void UBasicWeapon::Fire()
 {
-	if (!HasAuthority())
+	if (!MyOwner->HasAuthority())
 	{
 		UE_LOG(LogTemp, Warning, TEXT("Dose Not Have Authority"));
 		ServerFire();		
-	}	
-	
-	AActor* MyOwner = GetOwner();
+	}		
 
 	if (MyOwner)
 	{				
@@ -83,7 +78,6 @@ void ABasicWeapon::Fire()
 		
 		FCollisionQueryParams QueryParams;
 		QueryParams.AddIgnoredActor(MyOwner);
-		QueryParams.AddIgnoredActor(this);
 
 		QueryParams.bTraceComplex = true;
 		QueryParams.bReturnPhysicalMaterial = true;
@@ -98,8 +92,6 @@ void ABasicWeapon::Fire()
 		{
 			AActor* HitActor = Hit.GetActor();
 			APlayerCharacter* HitPlayer = Cast<APlayerCharacter>(HitActor);
-
-			Player = Cast<APlayerCharacter>(MyOwner);
 
 			if (HitPlayer)
 			{
@@ -121,7 +113,7 @@ void ABasicWeapon::Fire()
 						ActualDamage *= HeadShotMultiplier;
 					}
 				
-					UGameplayStatics::ApplyPointDamage(HitActor, ActualDamage, ShotDirection, Hit, MyOwner->GetInstigatorController(), this, DamageType);	
+					UGameplayStatics::ApplyPointDamage(HitActor, ActualDamage, ShotDirection, Hit, MyOwner->GetInstigatorController(), MyOwner, DamageType);	
 				}	
 			}		
 			
@@ -145,7 +137,7 @@ void ABasicWeapon::Fire()
 
 		//UE_LOG(LogTemp, Warning, TEXT("Current ammo %s, / Max Ammo %s"),CurrentAmmo, MaxAmmo);
 
-		if (HasAuthority())
+		if (MyOwner->HasAuthority())
 		{
 			HitScanTrace.TraceEnd = TracerEndPoint;
 			HitScanTrace.SurfaceType = SurfaceType;
@@ -154,19 +146,19 @@ void ABasicWeapon::Fire()
 }
 
 
-void ABasicWeapon::ServerReload_Implementation()
+void UBasicWeapon::ServerReload_Implementation()
 {
 	StartReload();
 }
 
-bool ABasicWeapon::ServerReload_Validate()
+bool UBasicWeapon::ServerReload_Validate()
 {
 	return true;
 }
 
-void ABasicWeapon::StartReload()
+void UBasicWeapon::StartReload()
 {
-	if (!HasAuthority())
+	if (!MyOwner->HasAuthority())
 	{
 		UE_LOG(LogTemp, Warning, TEXT("Dose Not Have Authority"));
 		ServerReload();		
@@ -175,7 +167,7 @@ void ABasicWeapon::StartReload()
 	UE_LOG(LogTemp, Warning, TEXT("StartReload"));
 	CanShot = false;
 
-	GetWorldTimerManager().SetTimer(TimerHandle_ReloadTime, this, &ABasicWeapon::EndReload, ReloadTime, false);
+	MyOwner->GetWorldTimerManager().SetTimer(TimerHandle_ReloadTime, this, &UBasicWeapon::EndReload, ReloadTime, false);
 
 	//Player = Cast<APlayerCharacter>(GetOwner());
 	//FTimerManager Manager;
@@ -183,15 +175,15 @@ void ABasicWeapon::StartReload()
 	//Player->GetWorldTimerManager().SetTimer(TimerHandle_ReloadTime, this, &ABasicWeapon::EndReload, ReloadTime, false);
 }
 
-void ABasicWeapon::EndReload()
+void UBasicWeapon::EndReload()
 {
 	UE_LOG(LogTemp, Warning, TEXT("EndReload"));
 	CanShot = true;
 	CurrentAmmo = MaxAmmo;
-	GetWorldTimerManager().ClearTimer(TimerHandle_ReloadTime);	
+	MyOwner->GetWorldTimerManager().ClearTimer(TimerHandle_ReloadTime);	
 }
 
-void ABasicWeapon::StartSecondary()
+void UBasicWeapon::StartSecondary()
 {
 	if (CanADS)
 	{
@@ -200,7 +192,7 @@ void ABasicWeapon::StartSecondary()
 	}
 }
 
-void ABasicWeapon::EndSecondary()
+void UBasicWeapon::EndSecondary()
 {
 	if (CanADS)
 	{
@@ -209,24 +201,22 @@ void ABasicWeapon::EndSecondary()
 	}
 }
 
-void ABasicWeapon::OnRep_HitScanTrace()
+void UBasicWeapon::OnRep_HitScanTrace()
 {
 	PlayFireEffects(HitScanTrace.TraceEnd);
 	PlaySurfaceEffect(HitScanTrace.TraceEnd,HitScanTrace.SurfaceType);
 }
 
-void ABasicWeapon::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
+void UBasicWeapon::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
 {
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
 
-	DOREPLIFETIME_CONDITION(ABasicWeapon, HitScanTrace,COND_SkipOwner);
+	DOREPLIFETIME_CONDITION(UBasicWeapon, HitScanTrace,COND_SkipOwner);
 }
 
 // Called every frame
-void ABasicWeapon::Tick(float DeltaTime)
+void UBasicWeapon::Tick(float DeltaTime)
 {
-	Super::Tick(DeltaTime);
-
 	if (CanADS && Player)
 	{
 		float TargetFOV = WantToADS ? ADS_FOV : Player->DefaultFOV;
@@ -245,23 +235,23 @@ void ABasicWeapon::Tick(float DeltaTime)
 	}
 }
 
-void ABasicWeapon::StartFire()
+void UBasicWeapon::StartUsing()
 {
 	float FirstDelay = FMath::Max(LastFireTime + TimeBetweenShots - GetWorld()->TimeSeconds, 0.0f);
 	
-	GetWorldTimerManager().SetTimer(TimerHandle_TimeBetweenShots, this, &ABasicWeapon::Fire, TimeBetweenShots, Automatic, FirstDelay);
+	MyOwner->GetWorldTimerManager().SetTimer(TimerHandle_TimeBetweenShots, this, &UBasicWeapon::Fire, TimeBetweenShots, Automatic, FirstDelay);
 }
 
-void ABasicWeapon::EndFire()
+void UBasicWeapon::StopUsing()
 {	
-	GetWorldTimerManager().ClearTimer(TimerHandle_TimeBetweenShots);	
+	MyOwner->GetWorldTimerManager().ClearTimer(TimerHandle_TimeBetweenShots);	
 }
 
-void ABasicWeapon::PlayFireEffects(FVector TraceEnd)
+void UBasicWeapon::PlayFireEffects(FVector TraceEnd)
 {
 	if (MuzzleEffect)
 	{
-		UGameplayStatics::SpawnEmitterAttached(MuzzleEffect, SkeletonMeshComp, MuzzleSocketName);
+		//UGameplayStatics::SpawnEmitterAttached(MuzzleEffect, SkeletonMeshComp, MuzzleSocketName);
 	}
 	else
 	{
@@ -274,7 +264,7 @@ void ABasicWeapon::PlayFireEffects(FVector TraceEnd)
 
 		if (SkeletonMeshComp)
 		{
-			MuzzlePos = SkeletonMeshComp->GetSocketLocation(MuzzleSocketName);
+			//MuzzlePos = SkeletonMeshComp->GetSocketLocation(MuzzleSocketName);
 		}
 
 		UParticleSystemComponent* TracerComp = UGameplayStatics::SpawnEmitterAtLocation(GetWorld(), TracerEffect, MuzzlePos);
@@ -290,7 +280,7 @@ void ABasicWeapon::PlayFireEffects(FVector TraceEnd)
 	}
 }
 
-void ABasicWeapon::PlaySurfaceEffect(FVector ImpactPoint, EPhysicalSurface SurfaceType)
+void UBasicWeapon::PlaySurfaceEffect(FVector ImpactPoint, EPhysicalSurface SurfaceType)
 {
 	UParticleSystem* SelectedEffect = nullptr;
 			
@@ -311,7 +301,7 @@ void ABasicWeapon::PlaySurfaceEffect(FVector ImpactPoint, EPhysicalSurface Surfa
 		
 		if (SkeletonMeshComp)
 		{
-			MuzzlePos = SkeletonMeshComp->GetSocketLocation(MuzzleSocketName);
+			//MuzzlePos = SkeletonMeshComp->GetSocketLocation(MuzzleSocketName);
 		}
 
 		FVector ShotDirection = ImpactPoint - MuzzlePos;

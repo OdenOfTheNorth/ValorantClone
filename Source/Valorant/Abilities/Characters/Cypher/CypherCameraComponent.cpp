@@ -112,7 +112,7 @@ void UCypherCameraComponent::PlaceCamera(FVector CamPos)
 
 	if (CameraObject)
 	{
-		CameraObject->OwnerPawn = Cast<APawn>(MyOwner);	
+		CameraObject->MyOwner = Cast<APawn>(MyOwner);	
 	}
 	
 	CameraAction = ECameraAction::Default;
