@@ -19,7 +19,7 @@
 #include "Valorant/Abilities/ValorantGameplayAbility.h"
 #include <GameplayEffectTypes.h>
 
-APlayerCharacter::APlayerCharacter()
+APlayerCharacter::APlayerCharacter(const FObjectInitializer& ObjectInitializer)
 { 	
 	PrimaryActorTick.bCanEverTick = true;
 	GetMovementComponent()->GetNavAgentPropertiesRef().bCanCrouch = true;

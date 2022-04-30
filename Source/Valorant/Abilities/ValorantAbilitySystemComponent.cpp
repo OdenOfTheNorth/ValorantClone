@@ -3,7 +3,8 @@
 
 #include "Valorant/Abilities/ValorantAbilitySystemComponent.h"
 
-UValorantAbilitySystemComponent::UValorantAbilitySystemComponent()
+UValorantAbilitySystemComponent::UValorantAbilitySystemComponent(const FObjectInitializer& ObjectInitializer)
+	: UAbilitySystemComponent(ObjectInitializer)
 {
 }
 

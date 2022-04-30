@@ -14,7 +14,7 @@ class VALORANT_API UValorantAbilitySystemComponent : public UAbilitySystemCompon
 {
 	GENERATED_BODY()
 public:
-	UValorantAbilitySystemComponent();
+	UValorantAbilitySystemComponent(const FObjectInitializer& ObjectInitializer);
 
 	//bool bCharacterAbilitiesGiven = false;
 	//bool bStartupEffectsApplied = false;

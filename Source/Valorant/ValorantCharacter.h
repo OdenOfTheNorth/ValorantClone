@@ -52,7 +52,7 @@ class AValorantCharacter : public ACharacter
 	UMotionControllerComponent* L_MotionController;
 
 public:
-	AValorantCharacter();
+	AValorantCharacter(const FObjectInitializer& ObjectInitializer);
 
 protected:
 	virtual void BeginPlay();

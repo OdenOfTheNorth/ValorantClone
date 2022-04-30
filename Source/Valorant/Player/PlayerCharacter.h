@@ -33,7 +33,7 @@ class VALORANT_API APlayerCharacter : public ACharacter ,public IAbilitySystemIn
 	GENERATED_BODY()
 
 public:
-	APlayerCharacter();
+	APlayerCharacter(const FObjectInitializer& ObjectInitializer);
 
 	UPROPERTY(EditDefaultsOnly)
 	TEnumAsByte<ETeam> Team;
